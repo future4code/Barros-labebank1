@@ -45,9 +45,57 @@ app.post('/users/createaccount', (req: Request, res: Response) => {
         extrato: []
        })
 
-       res.status(200).send("Conta cadastrada com sucesso!");
+       res.status(201).send("Conta cadastrada com sucesso!");
        
     }catch(err: any) {
+        res.status(errorCode).send(err.message);
+    }
+});
+
+app.patch('/users/transfer', (req: Request, res: Response) => {
+    let errorCode = 400;
+    try {
+        const infoTransfer = req.body
+
+        if (!infoTransfer) {
+            errorCode = 422
+            throw new Error("Deve passar os dados da transferência via body.");
+        }
+
+        if (!infoTransfer.payee || !infoTransfer.payee.name || !infoTransfer.payee.CPF) {
+            errorCode = 422
+            throw new Error("Deve informar nome e CPF do pagador da transferência");
+        }
+        
+        if (!infoTransfer.receiver || !infoTransfer.receiver.name || !infoTransfer.receiver.CPF) {
+            errorCode = 422
+            throw new Error("Deve informar nome e CPF do recebedor da transferência");
+        }
+
+        if (!infoTransfer.value || typeof infoTransfer.value !== "number" || infoTransfer.value <= 0) {
+            errorCode = 422
+            throw new Error("Deve informar o valor a ser transferido.");
+        }
+
+        const indexPayee = account.findIndex(user => user.CPF === infoTransfer.payee.CPF && user.name === infoTransfer.payee.name)
+        const indexReceiver = account.findIndex(user => user.CPF === infoTransfer.receiver.CPF && user.name === infoTransfer.receiver.name)
+
+        if (indexPayee < 0) {
+            errorCode = 404
+            throw new Error("Pagador não encontrado");
+        }
+
+        if (indexReceiver < 0) {
+            errorCode = 404
+            throw new Error("Recebedor não encontrado");
+        }
+
+        account[indexPayee].saldo -= infoTransfer.value
+        account[indexReceiver].saldo += infoTransfer.value
+        
+        res.status(201).send(`Transferência de R$ ${infoTransfer.value} enviada com sucesso!`);
+
+    } catch (err: any) {
         res.status(errorCode).send(err.message);
     }
 });
