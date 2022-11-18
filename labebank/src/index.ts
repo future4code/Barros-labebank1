@@ -149,6 +149,76 @@ app.get("/user/balance", (req: Request, resp: Response) => {
     }
 })
 
+// Pagar conta ==>
+
+app.patch("/users/bill-pay", (req: Request, resp: Response) => {
+    let errorCode = 400;
+    try {
+       const { name, CPF, billValue, description, payDate } = req.body
+
+        if (!name) {
+            errorCode = 422
+            throw new Error("Nome inválido.");
+        }
+
+        if (!CPF) {
+            errorCode = 422
+            throw new Error("CPF inválido.");
+        }
+
+       if (!billValue) {
+            errorCode = 422
+            throw new Error("Valor inválido.");
+        }
+
+        if (!description) {
+            errorCode = 422
+            throw new Error("Descrição inválida.");
+        }
+
+        let transferDate = payDate
+
+        if (!payDate) {
+            transferDate = Date.now()
+        } else {
+
+            // Cálculo para saber se a data ja passou
+
+            let checkDate = transferDate.split('-').reverse().join('-')
+            let transfer: any = new Date(`${checkDate} 00:00:00`)
+            let validData = Math.floor(Date.now() - transfer)
+
+            if (validData > 0) {
+                errorCode = 403;
+                throw new Error("Data inválida, insira uma que seja no futuro.")
+            }
+
+        }
+
+        // Cálculo para saber se há débito na conta
+
+        const indexPayeeBill = account.findIndex(user => user.CPF === CPF && user.name === name)
+
+        if (indexPayeeBill < 0) {
+            errorCode = 404
+            throw new Error("Pagador não encontrado");
+        }
+
+        if (account[indexPayeeBill].saldo < billValue) {
+            errorCode = 409;
+            throw new Error("Valor a ser pago da conta acima do saldo disponível.")
+        };
+
+        account[indexPayeeBill].saldo -= billValue
+
+        resp.status(200).send(`Débito de ${description} no valor ${billValue} será efetuado na data ${transferDate}.`);
+
+    } catch (err: any) {
+        resp.status(errorCode).send(err.message)
+    }
+
+})
+
 app.listen(3003, () => {
     console.log("Server is running in http://localhost:3003");
 });
