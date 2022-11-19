@@ -1,5 +1,5 @@
 console.log("LabeBank");
-import express, { Response, Request, response } from "express";
+import express, { Response, Request } from "express";
 import cors from 'cors';
 import { account } from "./data";
 
