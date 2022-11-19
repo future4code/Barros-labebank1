@@ -1,5 +1,5 @@
 console.log("LabeBank");
-import express, { Response, Request, response } from "express";
+import express, { Response, Request } from "express";
 import cors from 'cors';
 import { account } from "./data";
 
@@ -104,12 +104,6 @@ app.patch('/users/transfer', (req: Request, res: Response) => {
 app.get("/users", (req: Request, resp: Response) => {
     let errorCode = 400;
     try {
-
-        const token = req.query.authorization;
-        if (!token) {
-            errorCode = 401
-            throw new Error("Erro de autenticação");
-        }
         resp.status(200).send(account)
 
     } catch (err: any) {
@@ -133,11 +127,11 @@ app.get("/user/balance", (req: Request, resp: Response) => {
         }
         const balance = account.filter((user) => {
             if (user.CPF === CPF && user.name.toUpperCase() === name.toUpperCase()) {
-                balanceUser = user.saldo
+               return  balanceUser = user.saldo
             }
         }
         )
-        if (!balance) {
+        if (balance.length === 0) {
             errorCode = 404
             throw new Error("Não encontrado");
         }
@@ -217,6 +211,46 @@ app.patch("/users/bill-pay", (req: Request, resp: Response) => {
         resp.status(errorCode).send(err.message)
     }
 
+})
+
+
+// Adicionar Saldo ===>
+
+app.put("/adicionar/saldo", (req: express.Request, resp: express.Response) => {
+    const {name,CPF, newBalance} = req.body;
+    let errorCode = 400;
+    let balance
+     
+    try{
+        if (!name) {
+            errorCode = 422;
+            throw new Error("Não possui parametro name!");
+        }
+        if (!CPF) {
+            errorCode = 422;
+            throw new Error("Não possui parametro CPF!");
+        }
+        if (!newBalance) {
+            errorCode = 422;
+            throw new Error("Não possui parametro newBalance!");
+        }
+        const searchUser = account.filter((user) => {
+            if(user.CPF === CPF){
+               balance = user.saldo + newBalance  
+             return  user.saldo = balance
+            }
+        });
+
+       if(searchUser.length == 0){
+        errorCode = 422;
+          throw new Error("Não possui esse usuario");
+       }
+
+        resp.status(201).send(`Seu saldo atualizado é de ${balance}`);
+      
+    }catch(erro:any){
+        resp.status(errorCode).send(erro.message)
+    }
 })
 
 app.listen(3003, () => {
